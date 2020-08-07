@@ -15,7 +15,7 @@ import pandas as pd
 
 class StockData(object):
     def __init__(self):
-        self.pro = ts.pro_api('32d57ff4cf328a6b7a2f06d638f882763130c06dfa3168a886f10f37')
+        self.pro = ts.pro_api('xxxxxxxxxx')
 
     # 这里可以自定义开始到结束的时间，还有股票代码，使用的时候设置
     def get_data(self,code, start='19900101', end='20200722'):
