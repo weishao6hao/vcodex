@@ -42,137 +42,95 @@ data_train.shape
 # In[18]:
 
 
-# data_train.shape
-data_train.head(10)
-
-
-# In[28]:
-
-
-cols = ['open','high','low','close']
-# data_train.iloc[:3]
-
-
-# In[146]:
-
-
-# n = data_train.shape[0]
-X_train = []
-y_train = []
-for i in range(0,n-5):
-    cur = data_train.iloc[i:i+5,[2,3,4,5]]
+n = data_train.shape[0]
+#选取过去7天的'high','low','close'数据作为特征，并进行归一化
+length = 7  
+X_train,y_train = [],[]
+#提取训练数据
+for i in range(0,n-length):
+    cur = data_train.iloc[i:i+length,[3,4,5]]
     temp = []
     for j in cur.values:
         temp+=list(j)
-    X_train.append(temp)
-    y_train.append(data_train.iloc[i+5,5])
+    X_train.append(list((np.array(temp)-min(temp))/(max(temp)-min(temp))))
+    y_train.append((data_train.iloc[i+length,5]-min(temp))/(max(temp)-min(temp)))
     
 
 
-# In[149]:
+# In[334]:
 
 
-# X_train = pd.DataFrame(X_train)
-# X_train = X_train.values
-# import numpy as np
-# c = np.array(X_train)[np.newaxis,:]
-# y_train = np.array(y_train)
-# y_train3 = y_train2[np.newaxis,:]
-# y_train3.shape
-# X_train2 = X_train2.reshape((464,1,20))
-# X_train2.shape
-# y_train[:,np.newaxis].shape
-# y_train[:,np.newaxis][:,np.newaxis][:5]
-# len(y_train)
-# X_train2 = X_train2.reshape((2304,1,80))
-# y_train = np.array(y_train)
-# y_train.shape
-X_train3 = X_train2.reshape((2319,5,4))
-# X_train[:5]
-# y_train[:5]
-# X_train2.shape
+n = data_test.shape[0]
+# length = 7
+#提取测试数据
+X_test,y_test = [],[]
+for i in range(0,n-length):
+    cur = data_test.iloc[i:i+length,[3,4,5]]
+    temp = []
+    for j in cur.values:
+        temp+=list(j)
+    X_test.append(list((np.array(temp)-min(temp))/(max(temp)-min(temp))))
+    y_test.append((data_test.iloc[i+length,5]-min(temp))/(max(temp)-min(temp)))
 
 
-# In[133]:
+# In[335]:
+
+
+X_train = np.array(X_train)[np.newaxis,:]
+X_train = X_train.reshape((X_train.shape[1],length,3))
+
+X_test = np.array(X_test)[np.newaxis,:]
+X_test = X_test.reshape((X_test.shape[1],length,3))
+
+
+# In[271]:
 
 
 # data_train = data_train[::-1]
-data_train.head()
+# data_train.head()
+# np.array(X_test).shape
+y_test[:5]
 
 
-# In[134]:
-
-
-# len(X_train),len(y_train)
-# y_train[:1]
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation
-from keras.layers.recurrent import LSTM
-from keras.models import load_model
-from keras.layers import RepeatVector
-import keras
-
-
-# In[165]:
+# In[365]:
 
 
 model = Sequential()
 
-model.add(LSTM(6, input_shape=(X_train3.shape[1], X_train3.shape[2]), return_sequences=False))
+model.add(LSTM(6, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences=False))
 
 # model.add(Dense(5,kernel_initializer="uniform",activation='relu'))        
 model.add(Dense(1,kernel_initializer="uniform",activation='linear'))
 
-adam = keras.optimizers.Adam(learning_rate=0.1,decay=0.5)
+adam = keras.optimizers.Adam(learning_rate=0.07,decay=0.1)
 model.compile(loss='mae', optimizer='adam')
 model.summary()
 
 
-# In[169]:
+# In[366]:
 
 
 # model.get_weights()[3].shape
-history = model.fit(X_train3, y_train, epochs=1000, verbose=2, shuffle=False)
+history = model.fit(X_train, y_train, epochs=1000, verbose=2, shuffle=False)
 
 
-# In[170]:
-
-
-pred = model.predict(X_train3)
-# len(y_train)
-# X_train3.shape
-
-
-# In[172]:
+# In[367]:
 
 
 # import matplotlib.pyplot as plt
-plt.figure()
-plt.plot(pred)
-plt.plot(y_train)
-plt.show()
+# plt.figure()
+# plt.plot(pred)
+# plt.plot(y_train)
+# plt.show()
+pred = model.predict(X_train)
+result = pd.DataFrame(X_train[:,-1,-1]<y_train,columns=['tlabel'])
+result['plabel'] = list(X_train[:,-1,-1]<pred[:,0])
+print('train acc:',result[result.tlabel==result.plabel].shape[0]/result.shape[0])
 
-
-# In[9]:
-
-
-from sklearn import preprocessing as process
-scaler = process.StandardScaler()
-scaler.fit(X)
-X_scalerd = scaler.transform(X)
-y = pd.DataFrame(X_scalerd)[3].values
-
-
-# In[145]:
-
-
-y_train[-6:]
-
-
-# In[ ]:
-
-
-
-
- 
-
+pred = model.predict(X_test)
+result = pd.DataFrame(X_test[:,-1,-1]<y_test,columns=['tlabel'])
+result['plabel'] = list(X_test[:,-1,-1]<pred[:,0])
+print('test acc',result[result.tlabel==result.plabel].shape[0]/result.shape[0])
+# result.head()
+# X_train[:,-1,-1]
+# result.plabel.value_counts()
